@@ -1,0 +1,50 @@
+{
+  "name": "dumptek-crm-api",
+  "version": "1.0.0",
+  "main": "src/index.ts",
+  "scripts": {
+    "start": "node dist/index.js",
+    "build": "tsc",
+    "dev": "tsx watch src/index.ts",
+    "migrate": "tsx src/db/migrate.ts",
+    "generate-migration": "drizzle-kit generate --schema=./src/db/schema.ts --out=./src/db/migrations --dialect=postgresql",
+    "seed": "tsx src/db/seeder/index.ts",
+    "sync-calls": "tsx src/scripts/syncTwilioCalls.ts",
+    "process-transcriptions": "tsx src/scripts/processTranscriptions.ts"
+  },
+  "engines": {
+    "node": ">=20.15.1"
+  },
+  "dependencies": {
+    "@koa/cors": "^5.0.0",
+    "@koa/router": "^13.1.0",
+    "axios": "^1.7.9",
+    "bcrypt": "^5.1.1",
+    "date-fns": "^3.6.0",
+    "dotenv": "^16.4.5",
+    "drizzle-orm": "^0.33.0",
+    "jsonwebtoken": "^9.0.2",
+    "koa": "^2.15.3",
+    "koa-bodyparser": "^4.4.1",
+    "node-cron": "^3.0.3",
+    "openai": "^4.91.1",
+    "pg": "^8.12.0",
+    "twilio": "^5.3.5",
+    "winston": "^3.13.1"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/jsonwebtoken": "^9.0.6",
+    "@types/koa": "^2.15.0",
+    "@types/koa__cors": "^5.0.0",
+    "@types/koa__router": "^12.0.4",
+    "@types/koa-bodyparser": "^4.3.12",
+    "@types/node": "^22.2.0",
+    "@types/node-cron": "^3.0.11",
+    "@types/pg": "^8.11.6",
+    "drizzle-kit": "^0.24.0",
+    "ts-node-dev": "^2.0.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.5.4"
+  }
+}
