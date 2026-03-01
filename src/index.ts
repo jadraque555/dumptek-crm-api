@@ -14,7 +14,13 @@ const PORT = process.env.PORT || 4000;
 
 // Middleware
 app.use(errorHandler);
-app.use(cors());
+app.use(cors({
+  origin: '*',
+  credentials: true,
+  allowHeaders: ['Content-Type', 'Authorization'],
+  exposeHeaders: ['Content-Type', 'Authorization'],
+  allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
+}));
 app.use(bodyParser());
 
 // Routes

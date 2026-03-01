@@ -4,6 +4,16 @@ import { fetchRecentCalls, getRecordingUrl } from '../services/twilioService';
 import { eq } from 'drizzle-orm';
 import logger from '../utils/logger';
 
+// Normalize Twilio's call direction to our enum values
+function normalizeCallDirection(twilioDirection: string): 'inbound' | 'outbound' {
+  // Twilio returns: inbound, outbound-api, outbound-dial, trunking-originating, trunking-terminating
+  if (twilioDirection === 'inbound') {
+    return 'inbound';
+  }
+  // Map all outbound-* and trunking-* to 'outbound'
+  return 'outbound';
+}
+
 async function syncTwilioCalls() {
   try {
     logger.info('Starting Twilio call sync...');
@@ -48,12 +58,15 @@ async function syncTwilioCalls() {
       // Get recording URL if available
       const recordingUrl = await getRecordingUrl(twilioCall.sid);
       
+      // Normalize direction
+      const direction = normalizeCallDirection(twilioCall.direction);
+      
       // Insert new call
       await db.insert(calls).values({
         twilioCallSid: twilioCall.sid,
-        phoneNumber: twilioCall.direction === 'inbound' ? twilioCall.from : twilioCall.to,
+        phoneNumber: direction === 'inbound' ? twilioCall.from : twilioCall.to,
         duration: parseInt(twilioCall.duration),
-        direction: twilioCall.direction as any,
+        direction,
         status: twilioCall.status,
         recordingUrl,
         transcriptionStatus: recordingUrl ? 'pending' : 'failed',

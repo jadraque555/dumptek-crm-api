@@ -5,7 +5,7 @@ import { CallAnalysis } from './openaiService';
 import { searchCarrierByPhone, getCarrierByDOT } from './fmcsaService';
 import logger from '../utils/logger';
 
-export async function shouldAutoCreateProspect(analysis: CallAnalysis): boolean {
+export function shouldAutoCreateProspect(analysis: CallAnalysis): boolean {
   return (
     analysis.is_prospect === true &&
     analysis.prospect_score >= 60 &&
@@ -14,7 +14,7 @@ export async function shouldAutoCreateProspect(analysis: CallAnalysis): boolean 
   );
 }
 
-export async function needsReview(analysis: CallAnalysis): boolean {
+export function needsReview(analysis: CallAnalysis): boolean {
   return (
     analysis.is_prospect === true &&
     ((analysis.prospect_score >= 40 && analysis.prospect_score < 60) ||
@@ -36,11 +36,16 @@ export async function autoCreateProspect(
       throw new Error('Call not found');
     }
     
-    // Try to enrich with FMCSA data
+    // Try to enrich with FMCSA data (optional - don't fail if API is down)
     let fmcsaData = null;
-    const fmcsaCarriers = await searchCarrierByPhone(phoneNumber);
-    if (fmcsaCarriers.length > 0) {
-      fmcsaData = fmcsaCarriers[0];
+    try {
+      const fmcsaCarriers = await searchCarrierByPhone(phoneNumber);
+      if (fmcsaCarriers.length > 0) {
+        fmcsaData = fmcsaCarriers[0];
+      }
+    } catch (error) {
+      logger.warn('Failed to fetch FMCSA data (API may be down), continuing without enrichment:', error);
+      // Continue without FMCSA data
     }
     
     // Assign to sales rep (round-robin or default)
@@ -116,14 +121,27 @@ export async function enrichProspectWithFMCSA(
       throw new Error('Prospect not found');
     }
     
+    let carrier = null;
+    
+    // Try to get carrier by DOT number first
     const dot = dotNumber || prospect.dotNumber;
-    if (!dot) {
-      throw new Error('No DOT number provided');
+    if (dot) {
+      logger.info(`Searching FMCSA by DOT number: ${dot}`);
+      carrier = await getCarrierByDOT(dot);
     }
     
-    const carrier = await getCarrierByDOT(dot);
+    // If no carrier found by DOT, try searching by phone
+    if (!carrier && prospect.phone) {
+      logger.info(`No DOT number available, searching FMCSA by phone: ${prospect.phone}`);
+      const carriers = await searchCarrierByPhone(prospect.phone);
+      if (carriers.length > 0) {
+        carrier = carriers[0];
+        logger.info(`Found carrier by phone: ${carrier.legalName} (DOT: ${carrier.dotNumber})`);
+      }
+    }
+    
     if (!carrier) {
-      throw new Error('Carrier not found in FMCSA');
+      throw new Error('Carrier not found in FMCSA. Please provide a DOT number or ensure the phone number is registered.');
     }
     
     await db
@@ -143,7 +161,7 @@ export async function enrichProspectWithFMCSA(
       })
       .where(eq(prospects.id, prospectId));
     
-    logger.info(`Enriched prospect ${prospectId} with FMCSA data`);
+    logger.info(`Enriched prospect ${prospectId} with FMCSA data (DOT: ${carrier.dotNumber})`);
   } catch (error) {
     logger.error('Error enriching prospect with FMCSA:', error);
     throw error;

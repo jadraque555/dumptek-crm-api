@@ -11,6 +11,19 @@ const fmcsaClient = axios.create({
   },
 });
 
+// Add request interceptor to log the exact URL
+fmcsaClient.interceptors.request.use(
+  (config) => {
+    const fullUrl = `${config.baseURL}${config.url}${config.params ? '?' + new URLSearchParams(config.params).toString() : ''}`;
+    logger.info(`[AXIOS] Full Request URL: ${fullUrl}`);
+    logger.info(`[AXIOS] Headers: ${JSON.stringify(config.headers)}`);
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
 export interface FMCSACarrier {
   dotNumber: number;
   legalName: string;
@@ -28,14 +41,10 @@ export interface FMCSACarrier {
 
 export async function searchCarrierByPhone(phone: string): Promise<FMCSACarrier[]> {
   try {
-    const response = await fmcsaClient.get('/api/carriers', {
-      params: { telephone: phone, limit: 10 },
-    });
-    
-    logger.info(`FMCSA search by phone ${phone}: ${response.data.data?.length || 0} results`);
+    const response = await fmcsaClient.get(`/api/carriers?telephone=${phone}&limit=10`);
     
     return response.data.data || [];
-  } catch (error) {
+  } catch (error: any) {
     logger.error('Error searching FMCSA by phone:', error);
     throw error;
   }

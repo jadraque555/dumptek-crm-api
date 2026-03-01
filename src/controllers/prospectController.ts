@@ -195,10 +195,21 @@ export async function promoteToCustomer(ctx: Context) {
   if (prospect.dumptekCompanyId) {
     throw new BadRequestError('Prospect already promoted to customer');
   }
-  
+
   // Create in Dumptek
-  const dumptekCompany = await createDumptekCompany(prospect);
-  
+  let dumptekCompany;
+  try {
+    dumptekCompany = await createDumptekCompany(prospect);
+  } catch (error: any) {
+    const detail =
+      error.response?.data?.message ??
+      error.response?.data?.error ??
+      error.message ??
+      'Unknown error from Dumptek API';
+      console.log("sulod dri error", detail);
+    throw new BadRequestError(`Failed to create company in Dumptek: ${detail}`);
+  }
+
   // Update prospect
   await db
     .update(prospects)
@@ -208,7 +219,7 @@ export async function promoteToCustomer(ctx: Context) {
       updatedAt: new Date(),
     })
     .where(eq(prospects.id, prospect.id));
-  
+
   ctx.body = {
     message: 'Prospect promoted to customer',
     dumptekCompanyId: dumptekCompany.id,
