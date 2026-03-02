@@ -1,3 +1,4 @@
+import Koa from 'koa';
 import Router from '@koa/router';
 import * as authController from '../controllers/authController';
 import * as callController from '../controllers/callController';
