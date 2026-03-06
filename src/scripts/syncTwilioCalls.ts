@@ -1,7 +1,7 @@
 import { db } from '../db';
 import { calls } from '../db/schema';
 import { fetchRecentCalls, getRecordingUrl } from '../services/twilioService';
-import { eq } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 import logger from '../utils/logger';
 
 // Normalize Twilio's call direction to our enum values
@@ -18,15 +18,15 @@ async function syncTwilioCalls() {
   try {
     logger.info('Starting Twilio call sync...');
     
-    // Get last sync date (last call's createdAt)
-    const lastCall = await db
+    // Fetch from Twilio: after our most recent call, or last 7 days if DB is empty
+    const mostRecentCall = await db
       .select()
       .from(calls)
-      .orderBy(calls.createdAt)
+      .orderBy(desc(calls.createdAt))
       .limit(1);
-    
-    const startDate = lastCall.length > 0 
-      ? new Date(lastCall[0].createdAt) 
+
+    const startDate = mostRecentCall.length > 0
+      ? new Date(mostRecentCall[0].createdAt)
       : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // Default: last 7 days
     
     // Fetch recent calls from Twilio
