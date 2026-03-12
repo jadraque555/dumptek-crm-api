@@ -1,15 +1,33 @@
 import { Context } from 'koa';
-import { eq, desc, and, sql } from 'drizzle-orm';
+import { eq, desc, and, sql, gte, lte, ilike } from 'drizzle-orm';
 import { db } from '../db';
 import { calls, prospects } from '../db/schema';
 import { NotFoundError, BadRequestError } from '../utils/apiErrors';
 import { autoCreateProspect, needsReview } from '../services/prospectService';
 
 export async function listCalls(ctx: Context) {
-  const { limit = 50, offset = 0, status, requiresReview } = ctx.query;
-  
-  let query = db.select().from(calls).orderBy(desc(calls.createdAt));
-  
+  const {
+    limit = 50,
+    offset = 0,
+    status,
+    requiresReview,
+    classification,
+    sentiment,
+    minScore,
+    maxScore,
+    prospectName,
+    dotNumber,
+  } = ctx.query;
+
+  let query = db
+    .select({
+      call: calls,
+      prospect: prospects,
+    })
+    .from(calls)
+    .leftJoin(prospects, eq(calls.prospectId, prospects.id))
+    .orderBy(desc(calls.createdAt));
+
   // Apply filters
   const conditions = [];
   if (status) {
@@ -18,20 +36,50 @@ export async function listCalls(ctx: Context) {
   if (requiresReview === 'true') {
     conditions.push(eq(calls.requiresReview, true));
   }
-  
+  if (classification) {
+    conditions.push(eq(calls.callClassification, String(classification)));
+  }
+  if (sentiment) {
+    conditions.push(eq(calls.sentiment, sentiment as any));
+  }
+  if (minScore) {
+    conditions.push(gte(calls.prospectScore, Number(minScore)));
+  }
+  if (maxScore) {
+    conditions.push(lte(calls.prospectScore, Number(maxScore)));
+  }
+  if (prospectName) {
+    conditions.push(ilike(prospects.companyName, `%${prospectName}%`));
+  }
+  if (dotNumber) {
+    conditions.push(ilike(prospects.dotNumber, `%${dotNumber}%`));
+  }
+
   if (conditions.length > 0) {
     query = query.where(and(...conditions)) as any;
   }
-  
+
   const results = await query.limit(Number(limit)).offset(Number(offset));
-  
-  // Get total count
-  const [{ count }] = await db
-    .select({ count: sql<number>`count(*)` })
-    .from(calls);
-  
+
+  // Flatten results: merge call + prospect
+  const flatResults = results.map(({ call, prospect }) => ({
+    ...call,
+    prospectName: prospect?.companyName ?? null,
+    prospectDotNumber: prospect?.dotNumber ?? null,
+  }));
+
+  // Get total count with same filters
+  let countQuery = db.select({ count: sql<number>`count(*)` }).from(calls);
+  if (prospectName || dotNumber) {
+    countQuery = countQuery.leftJoin(prospects, eq(calls.prospectId, prospects.id)) as any;
+  }
+  if (conditions.length > 0) {
+    countQuery = countQuery.where(and(...conditions)) as any;
+  }
+  const [{ count }] = await countQuery;
+
   ctx.body = {
-    data: results,
+    data: flatResults,
     pagination: {
       total: Number(count),
       limit: Number(limit),

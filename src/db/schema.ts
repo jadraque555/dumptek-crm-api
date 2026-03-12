@@ -67,6 +67,9 @@ export const prospects = pgTable('prospects', {
   // Dumptek connection
   dumptekCompanyId: integer('dumptek_company_id'),
   
+  // Notes and action items
+  notes: text('notes'),
+  
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });

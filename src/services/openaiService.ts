@@ -51,6 +51,7 @@ export interface CallAnalysis {
     competitors_mentioned: string[];
   };
   next_steps: string[];
+  action_items: string[];
   sentiment: 'positive' | 'neutral' | 'negative';
   call_classification: string;
   summary: string;
@@ -90,9 +91,16 @@ export async function analyzeCallTranscription(transcriptionText: string): Promi
 
 6. **Next Steps:** What should the sales rep do next?
 
-7. **Sentiment:** positive/neutral/negative
+7. **Action Items/Notes:** Important notes for follow-up. Examples:
+   - "Call back in 6 months"
+   - "Already using [competitor software]"
+   - "Not interested at this time"
+   - "Waiting on budget approval"
+   - "Send pricing information"
 
-8. **Call Classification:**
+8. **Sentiment:** positive/neutral/negative
+
+9. **Call Classification:**
    - sales_inquiry
    - pricing_request
    - demo_request
@@ -125,6 +133,7 @@ Respond in JSON format with these exact fields:
     "competitors_mentioned": string[]
   },
   "next_steps": string[],
+  "action_items": string[],
   "sentiment": "positive" | "neutral" | "negative",
   "call_classification": string,
   "summary": string

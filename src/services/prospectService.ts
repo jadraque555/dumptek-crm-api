@@ -72,6 +72,7 @@ export async function autoCreateProspect(
         interestedServices: analysis.company_info.interested_services,
         painPoints: analysis.discussion_points.pain_points,
         timeline: analysis.discussion_points.timeline,
+        notes: analysis.action_items?.length ? analysis.action_items.join('\n') : null,
         status: 'new',
         assignedToUserId: assignedUserId,
       })
