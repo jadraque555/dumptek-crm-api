@@ -29,6 +29,8 @@ async function syncTwilioCalls() {
       ? new Date(mostRecentCall[0].createdAt)
       : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000); // Default: last 7 days
     
+    logger.info(`Fetching calls from Twilio after: ${startDate.toISOString()}`);
+    
     // Fetch recent calls from Twilio
     let twilioCalls;
     try {

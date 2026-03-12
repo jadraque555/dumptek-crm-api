@@ -36,12 +36,16 @@ export async function fetchRecentCalls(
 ): Promise<TwilioCall[]> {
   try {
     const twilioClient = getTwilioClient();
+    
+    // Format date as YYYY-MM-DD for Twilio API
+    const formattedStartDate = startDate.toISOString().split('T')[0];
+    
     const calls = await twilioClient.calls.list({
-      startTime: startDate,
+      startTimeAfter: new Date(formattedStartDate),
       limit,
     });
     
-    logger.info(`Fetched ${calls.length} calls from Twilio`);
+    logger.info(`Fetched ${calls.length} calls from Twilio (after ${formattedStartDate})`);
     
     return calls.map(call => ({
       sid: call.sid,
