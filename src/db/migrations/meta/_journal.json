@@ -8,6 +8,13 @@
       "when": 1737819600000,
       "tag": "0000_initial_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1741896000000,
+      "tag": "0001_add_notes_to_prospects",
+      "breakpoints": true
     }
   ]
 }
